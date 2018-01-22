@@ -2,7 +2,12 @@
 
 ![alt text](https://i.imgur.com/krj6Cdm.png "Flask Hangman")
 
-To run this application all one must do is have Python 2.7, and pip installed.
+## Dependencies
+
+> Python 2.7
+> pip
+
+## Getting started
 
 1. Clone this repository:
 
