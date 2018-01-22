@@ -1,10 +1,11 @@
 import random
+import sys
 import string
 from flask import (Flask, render_template,
                    request, redirect, url_for,
                    flash, jsonify, session)
 from hangman_states import hangman_states
-from words import words_list
+# from words import words_list
 from sqlalchemy import create_engine, exists
 from sqlalchemy.orm import sessionmaker
 from db_setup import Base, User
@@ -20,32 +21,37 @@ db_conn = DBSession()
 
 #  ------ App Routes ------
 
-# Index page, allows users to input username, and view previous scores.
-@app.route('/', methods=['GET','POST'])
+
+@app.route('/', methods=['GET', 'POST'])
 def welcome():
+    '''
+    Index page, allows users to input username, and view previous scores.
+    '''
 
     if request.method == 'GET':
         # Start the session
         prime_session()
-        return render_template('index.html', users=db_conn.query(User).order_by(User.wins.desc()).all())
+        return render_template('index.html', users=get_users())
 
     elif request.method == 'POST':
         if request.form['username']:
             session['username'] = request.form['username']
-            if isUser(session):
+            if is_user(session):
                 return redirect('/play-hangman')
             else:
-                createUser(session)
+                create_user(session)
                 return redirect('/play-hangman')
         else:
-            flash("Invalid Username.")
-            return render_template('index.html', users=db_conn.query(User).order_by(User.wins.desc()).all())
+            flash('Invalid Username.')
+            return render_template('index.html', users=get_users())
 
-    
-# Main game page, handles all game logic and state management.
-@app.route('/play-hangman', methods=['GET','POST'])
+
+@app.route('/play-hangman', methods=['GET', 'POST'])
 def play_hangman():
-    if request.method == "POST":
+    '''
+    Main game page, handles all game logic and state management.
+    '''
+    if request.method == 'POST':
 
         user_guess = request.form['guess'].lower()
 
@@ -54,8 +60,8 @@ def play_hangman():
 
             # Is the guess unique?
             if user_guess in session['guess_log']:
-                flash("You have already guessed that!")
-                return render_template('play.html', hangman=hangman_states[session['user_incorrect']])
+                flash('You have already guessed that!')
+                return render_game(session)
             else:
                 session['guess_log'].append(user_guess)
 
@@ -67,69 +73,166 @@ def play_hangman():
                     session['word_map'][user_guess] = True
 
                     # Have all of the letters been guessed?
-                    if all(value == True for value in session['word_map'].values()):
+                    if check_win(session):
                         return redirect('/win')
                     else:
-                        flash("Correct Guess! Guesses remaining: " + str(10 - session['user_incorrect']))
-                        return render_template('play.html', hangman=hangman_states[session['user_incorrect']])
+                        flash('Correct Guess! Guesses remaining: ' +
+                              str(10 - session['user_incorrect']))
+                        return render_game(session)
                 else:
-                    session['user_incorrect']+=1
-                    flash("Incorrect Guess. Guesses remaining: " + str(10 - session['user_incorrect']) )
-                    return render_template('play.html', hangman=hangman_states[session['user_incorrect']])
+                    session['user_incorrect'] += 1
+                    flash('Incorrect Guess. Guesses remaining: ' +
+                          str(10 - session['user_incorrect']))
+                    return render_game(session)
             else:
                 return redirect('/game-over')
         else:
-            flash("Invalid guess: must be alphabetical!")
-            return render_template('play.html', hangman=hangman_states[session['user_incorrect']])
+            flash('Invalid guess: must be alphabetical!')
+            return render_game(session)
     else:
-        return render_template('play.html', hangman=hangman_states[session['user_incorrect']])
+        return render_game(session)
 
-# Show the user the correct word and prompt to play again.
+
 @app.route('/game-over')
 def game_over():
-    db_conn.query(User).filter(User.name == session['username']).update({'losses': User.losses + 1})
+    '''
+    Show the user the correct word and prompt to play again.
+    '''
+    db_conn.query(User).filter(User.name == session[
+        'username']).update({'losses': User.losses + 1})
     db_conn.commit()
-    return render_template('loss.html', word = session['word'])
+    return render_template('loss.html', word=session['word'])
 
-# Congratulate the user on the win and prompt to play again. 
+
 @app.route('/win')
 def win():
-    db_conn.query(User).filter(User.name == session['username']).update({'wins': User.wins + 1})
-    db_conn.commit()
-    return render_template('win.html')
+    '''
+    Congratulate the user on the win and prompt to play again.
+    '''
+    if session.has_key('win'):
+        db_conn.query(User).filter(User.name == session[
+            'username']).update({'wins': User.wins + 1})
+        db_conn.commit()
+        return render_template('win.html')
+    else:
+        return redirect('/')
 
 # ------ General helper Functions ------
 
-# Create the user in the database.
-def createUser(session):
+
+def check_win(session):
+    '''
+    Check if all of the letters in the
+    word_map have been guessed.
+    '''
+    if all(val == True for val in session['word_map'].values()):
+        session['win'] = True
+        return True
+
+
+def random_word(filename):
+    '''
+    Randomly choose a word from the words list.
+    The underlying functions will not load the entire
+    words list into RAM - reducing usage a significant percentage.
+    '''
+    with open(filename) as words_file:
+        return get_random_line(words_file)
+
+
+def get_random_line(file):
+    '''
+    Will select and return a random line from a file.
+    Adapted from: http://bit.ly/2n1zvwl
+    '''
+    file.seek(0, 2)
+    last_char = file.tell() - 1  # skipping EOF position with -1
+    position = random.randint(0, last_char)
+
+    return get_line(file, position)
+
+
+def get_line(file, position):
+    '''
+    Returns a specific line in a file based on a position.
+    Adapted from: http://bit.ly/2n1zvwl
+    '''
+    start_position = position
+    while True:
+        file.seek(position)
+        symbol = file.read(1)
+        # get line when reaches \n, and when \n was not the first match
+        if symbol == '\n' and file.tell() != start_position + 1:
+            return file.readline().rstrip()
+
+        # get symbol + rest of the line when reaches start of file
+        elif position == 0:
+            return symbol + file.readline().rstrip()
+
+        else:
+            position -= 1
+
+
+def create_user(session):
+    '''
+    Create the user in the database.
+    '''
     newUser = User(name=session['username'],
                    wins=0,
                    losses=0)
     db_conn.add(newUser)
     db_conn.commit()
 
-# Check if a user already exists.
-def isUser(session):
+
+def is_user(session):
+    '''
+    Check if a user already exists in the database.
+    '''
     if not session:
         return False
     elif not session.has_key('username'):
         return False
-    elif not db_conn.query(User).filter(User.name == session['username']).first():
+    elif not db_conn.query(User)\
+            .filter(User.name == session['username']).first():
         return False
     else:
         return True
 
-# Initialize the session variables.
+
+def get_users():
+    '''
+    This function will return all user
+    objects in the database.
+    '''
+    return db_conn.query(User).order_by(User.wins.desc()).all()
+
+
+def render_game(session):
+    '''
+    This function will render the
+    hangman game, getting its current state
+    from the session
+    '''
+    return render_template('play.html',
+                           hangman=hangman_states[session['user_incorrect']])
+
+
 def prime_session():
+    '''
+    Initializes session variables.
+    '''
+
     session['guess_log'] = []
     session['user_incorrect'] = 0
-    session['word'] = random.choice(words_list)
+    session['word'] = random_word('words.txt')
     word_map = {}
     for letter in session['word']:
         word_map[letter.lower()] = False
     session['word_map'] = word_map
+    session.pop('win', None)
 
 # ------ Main ------
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=8000)
+    random_word('words.txt')
+    app.run(host='0.0.0.0', port=8000)

@@ -18,8 +18,11 @@
 }
 
 .footer {
-  position: absolute;
   bottom: 0;
   right: 0;
   left: 5px;
+}
+
+.fit-hangman {
+	display: inline-block;;
 }

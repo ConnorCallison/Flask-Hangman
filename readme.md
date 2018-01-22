@@ -17,3 +17,8 @@
 3. Run the following command: `gunicorn -w 2 app:app`
 
 4. Visit http://localhost:8000/
+
+### Misc.
+
+The words list (`words.txt`) contains words that would be more commonly known
+and reasonably guessable. Source: https://github.com/Xethron/Hangman/blob/master/words.txt

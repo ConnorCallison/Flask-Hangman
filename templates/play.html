@@ -7,7 +7,7 @@
 
 <div class="col-md-6 col-md-offset-3">
     <div class="gallow col-md-4 col-md-offset-4">
-        <pre>{{ hangman }}</pre>
+        <pre class="fit-hangman">{{ hangman }}</pre>
     </div>
 
     <div class="text-center col-md-12">
@@ -28,7 +28,7 @@
         <p>Use the box below to enter a letter to guess:</p>
         <div class="col-lg-4 col-lg-offset-4 text-center">
             <form method="POST">
-                <input type="text" name="guess" class="guess-input" maxlength="1">
+                <input type="text" name="guess" class="guess-input" maxlength="1" id="guess-entry">
                 <input type="submit" name="submit" class="btn btn-success">
             </form>
             <hr>
@@ -48,4 +48,8 @@
         </table>
     </div>
 </div>
+
+<script>
+    $( "#guess-entry" ).focus();
+</script>
 {% endblock %}

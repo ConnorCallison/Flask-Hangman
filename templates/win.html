@@ -4,6 +4,15 @@
     <h1>Congratulations!</h1>
     <h2>You won!</h2>
     <hr>
+    <div id="guessarea">
+            <ul>
+                {% if session['word_map'] %}
+                    {% for letter in session['word'] %}
+                            <li class="letter">{{ letter }}</li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
     <br>
 
     <a href="/" class="btn btn-lg btn-success">Play Again</a>
