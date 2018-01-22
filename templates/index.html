@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="col-md-6 col-md-offset-3 text-center">
+    <h1>Welcome to Hangman!</h1>
+    <p>This game was built using Pyhton, utilizing the <a href="http://flask.pocoo.org/">Flask</a> microframework and <a href="http://gunicorn.org/">Gunicorn</a> WSGI HTTP Server.</p>
+    <hr>
+    <div class="col-md-6 col-md-offset-3 text-center">
+        <form method="POST">
+            <input type="text" name="username" class="form-control" maxlength="10" placeholder="Enter username!" value="{{ session['username'] }}">
+            <br>
+            <input type="submit" class="btn btn-lg btn-success" value="Play Hangman">
+        </form>
+    </div>
+
+
+    <div class="col-md-12">
+        <hr>
+        <h5>Win / Loss Record</h5>
+
+        <table class="table table-bordered table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>
+                        Name
+                    </th>
+                    <th>
+                        Wins
+                    </th>
+                    <th>
+                        Losses
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>
+                            {{ user.name }}
+                        </td>
+                        <td>
+                            {{ user.wins }}
+                        </td>
+                        <td>
+                            {{ user.losses }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+#guessarea ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+#guessarea li {
+	position: relative;
+	display: inline-block;
+	padding: 0 10px;
+	font-size: 2em;
+}
+
+.guess-input {
+	max-width: 50px;
+	border-radius: 10px;
+	height: 30px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 5px;
+}

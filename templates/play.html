@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="col-md-6 col-md-offset-3 text-center">
+    <h1>Welcome to Hangman!</h1>
+    <hr>
+</div>
+
+<div class="col-md-6 col-md-offset-3">
+    <div class="gallow col-md-4 col-md-offset-4">
+        <pre>{{ hangman }}</pre>
+    </div>
+
+    <div class="text-center col-md-12">
+        <div id="guessarea">
+            <ul>
+                {% if session['word_map'] %}
+                    {% for letter in session['word'] %}
+                        {% if session['word_map'][letter] == True %}
+                            <li class="letter">{{ letter }}</li>
+                        {% else %}
+                            <li class="letter">_</li>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+        <br>
+        <p>Use the box below to enter a letter to guess:</p>
+        <div class="col-lg-4 col-lg-offset-4 text-center">
+            <form method="POST">
+                <input type="text" name="guess" class="guess-input" maxlength="1">
+                <input type="submit" name="submit" class="btn btn-success">
+            </form>
+            <hr>
+            {% if session['guess_log'] %}
+                <h4>Guesses</h4>
+            {% endif %}
+        </div>
+
+        <table class="table table-bordered">
+            <tbody>
+                <tr>
+                    {% for guess in session['guess_log'] %}
+                        <td>{{ guess }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
