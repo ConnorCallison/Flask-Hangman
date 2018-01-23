@@ -21,4 +21,5 @@
 ### Misc.
 
 The words list (`words.txt`) contains words that would be more commonly known
-and reasonably guessable. Source: https://github.com/Xethron/Hangman/blob/master/words.txt
+and reasonably guessable. However all words less than four character long have been removed.
+Source: https://github.com/Xethron/Hangman/blob/master/words.txt
