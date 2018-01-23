@@ -19,6 +19,7 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 db_conn = DBSession()
 
+
 #  ------ App Routes ------
 
 
@@ -56,10 +57,10 @@ def play_hangman():
         user_guess = request.form['guess'].lower()
 
         # If the user guess is valid?
-        if user_guess != '' and user_guess.isalpha():
+        if valid_guess(user_guess):
 
             # Is the guess unique?
-            if user_guess in session['guess_log']:
+            if not new_guess(user_guess, session['guess_log']):
                 flash('You have already guessed that!')
                 return render_game(session)
             else:
@@ -69,11 +70,12 @@ def play_hangman():
             if session['user_incorrect'] < 9:
 
                 # Is the guess correct?
-                if session['word_map'].has_key(user_guess):
+                if guess_correct(user_guess, session['word_map']):
                     session['word_map'][user_guess] = True
 
                     # Have all of the letters been guessed?
-                    if check_win(session):
+                    if check_win(session['word_map']):
+                        session['win'] = True
                         return redirect('/win')
                     else:
                         flash('Correct Guess! Guesses remaining: ' +
@@ -98,6 +100,7 @@ def game_over():
     '''
     Show the user the correct word and prompt to play again.
     '''
+    # Add a loss to the users database record.
     db_conn.query(User).filter(User.name == session[
         'username']).update({'losses': User.losses + 1})
     db_conn.commit()
@@ -110,6 +113,7 @@ def win():
     Congratulate the user on the win and prompt to play again.
     '''
     if session.has_key('win'):
+        # Add a win to the users database record.
         db_conn.query(User).filter(User.name == session[
             'username']).update({'wins': User.wins + 1})
         db_conn.commit()
@@ -120,13 +124,47 @@ def win():
 # ------ General helper Functions ------
 
 
-def check_win(session):
+def guess_correct(guess, word_map):
+    '''
+    Test if the user guess is in the secret word.
+    '''
+    if word_map.has_key(guess):
+        return True
+    else:
+        return False
+
+
+def new_guess(guess, guesslog):
+    '''
+    Check if the user has already guessed the given letter.
+    '''
+    if guess in guesslog:
+        return False
+    else:
+        return True
+
+
+def valid_guess(guess):
+    '''
+    Ensure that the guess is a string (or unicode) type,
+    is not empty, and is alphabetical.
+    '''
+    if not isinstance(guess, basestring):
+        return False
+    if guess != '' and guess.isalpha() and len(guess) == 1:
+        return True
+    else:
+        return False
+
+
+def check_win(word_map):
     '''
     Check if all of the letters in the
     word_map have been guessed.
     '''
-    if all(val == True for val in session['word_map'].values()):
-        session['win'] = True
+    if not word_map:
+        return False
+    if all(val == True for val in word_map.values()):
         return True
 
 
