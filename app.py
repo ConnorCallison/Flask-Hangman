@@ -37,10 +37,10 @@ def welcome():
     elif request.method == 'POST':
         if request.form['username']:
             session['username'] = request.form['username']
-            if is_user(session):
+            if is_user(session['username']):
                 return redirect('/play-hangman')
             else:
-                create_user(session)
+                create_user(session['username'])
                 return redirect('/play-hangman')
         else:
             flash('Invalid Username.')
@@ -87,6 +87,7 @@ def play_hangman():
                           str(10 - session['user_incorrect']))
                     return render_game(session)
             else:
+                session['loss'] = True
                 return redirect('/game-over')
         else:
             flash('Invalid guess: must be alphabetical!')
@@ -101,10 +102,13 @@ def game_over():
     Show the user the correct word and prompt to play again.
     '''
     # Add a loss to the users database record.
-    db_conn.query(User).filter(User.name == session[
-        'username']).update({'losses': User.losses + 1})
-    db_conn.commit()
-    return render_template('loss.html', word=session['word'])
+    if session.has_key('loss'):
+        db_conn.query(User).filter(User.name == session[
+            'username']).update({'losses': User.losses + 1})
+        db_conn.commit()
+        return render_template('loss.html', word=session['word'])
+    else:
+        return redirect('/')
 
 
 @app.route('/win')
@@ -120,6 +124,15 @@ def win():
         return render_template('win.html')
     else:
         return redirect('/')
+
+
+@app.route('/play-again')
+def play_again():
+    '''
+    prime the session and start another game for the user.
+    '''
+    prime_session()
+    return redirect('/play-hangman')
 
 # ------ General helper Functions ------
 
@@ -211,27 +224,48 @@ def get_line(file, position):
             position -= 1
 
 
-def create_user(session):
+def create_user(username):
     '''
     Create the user in the database.
     '''
-    newUser = User(name=session['username'],
-                   wins=0,
-                   losses=0)
-    db_conn.add(newUser)
-    db_conn.commit()
+    try:
+        if isinstance(username, basestring):
+            newUser = User(name=username,
+                       wins=0,
+                       losses=0)
+            db_conn.add(newUser)
+            db_conn.commit()
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        raise e
+
+def remove_user(username):
+    '''
+    Remove a user from the database.
+    '''
+    try:
+        user = get_user(username)
+        if user:
+            db_conn.delete(user)
+            db_conn.commit()
+            return True
+        else:
+            return False
+    except Exception as e:
+        raise e
 
 
-def is_user(session):
+def is_user(username):
     '''
     Check if a user already exists in the database.
     '''
-    if not session:
-        return False
-    elif not session.has_key('username'):
+    if not isinstance(username,basestring):
         return False
     elif not db_conn.query(User)\
-            .filter(User.name == session['username']).first():
+            .filter(User.name == username).first():
         return False
     else:
         return True
@@ -243,6 +277,14 @@ def get_users():
     objects in the database.
     '''
     return db_conn.query(User).order_by(User.wins.desc()).all()
+
+def get_user(username):
+    if not username:
+        return False
+    else:
+        user = db_conn.query(User)\
+            .filter(User.name == username).first()
+        return user
 
 
 def render_game(session):
@@ -268,6 +310,7 @@ def prime_session():
         word_map[letter.lower()] = False
     session['word_map'] = word_map
     session.pop('win', None)
+    session.pop('loss', None)
 
 # ------ Main ------
 

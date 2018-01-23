@@ -24,5 +24,6 @@
 }
 
 .fit-hangman {
-	display: inline-block;;
+	display: inline-block;
+	text-align: left;
 }
