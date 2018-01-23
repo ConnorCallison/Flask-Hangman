@@ -231,8 +231,8 @@ def create_user(username):
     try:
         if isinstance(username, basestring):
             newUser = User(name=username,
-                       wins=0,
-                       losses=0)
+                           wins=0,
+                           losses=0)
             db_conn.add(newUser)
             db_conn.commit()
             return True
@@ -241,6 +241,7 @@ def create_user(username):
 
     except Exception as e:
         raise e
+
 
 def remove_user(username):
     '''
@@ -262,7 +263,7 @@ def is_user(username):
     '''
     Check if a user already exists in the database.
     '''
-    if not isinstance(username,basestring):
+    if not isinstance(username, basestring):
         return False
     elif not db_conn.query(User)\
             .filter(User.name == username).first():
@@ -277,6 +278,7 @@ def get_users():
     objects in the database.
     '''
     return db_conn.query(User).order_by(User.wins.desc()).all()
+
 
 def get_user(username):
     if not username:
